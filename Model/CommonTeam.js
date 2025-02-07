@@ -55,5 +55,5 @@ const CommonTeam = new mongoose.Schema({
    
    
 },{timestamps:true});
-module.exports = mongoose.model('Userprofile',CommonTeam);
+module.exports = mongoose.model('userprofile',CommonTeam);
 
