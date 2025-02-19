@@ -1,75 +1,88 @@
 const mongoose = require('mongoose');
 
 const Customerconverstion = new mongoose.Schema({
-  
+    CustomerId:{
+        type:String,
+        
+      },
+    PANnumber:{
+        type:String,
+        
+      },
+      GSTNnumber:{
+        type: String,
+        
+    },
+    companyName: {
+            type: String,
+            required: true
+        },
+    AddressDetails: {
+        Address: {
+            type: String,
+            
+        },
+        Country: {
+            type: String,
+           
+        },
+        City: {
+            type: String,
+            
+        },
+        PostalCode: {
+            type: String,
+            
+        },
+        State: {
+            type: String,
+           
+        }
+    },
+    customerconvert:[{
     EnquiryNo:{
         type:String,
         required:true
       },
+    clientName: {
+                type: String,
+                required: true
+            },
     CustomerDetails:{
-  PANnumber:{
-    type:String,
-    required:true
-  },
   MobileNumber: {
     type: String,
-    required: true
+    
 },
 opportunitynumber:{
     type: String,
-    required: true
-},
-GSTNnumber:{
-    type: String,
-    required: true
+    
 },
 PrimaryMail: {
     type: String,
-    required: true
+    
 },
 },
-AddressDetails: {
-    Address: {
-        type: String,
-        required: true
-    },
-    Country: {
-        type: String,
-        required: true
-    },
-    City: {
-        type: String,
-        required: true
-    },
-    PostalCode: {
-        type: String,
-        required: true
-    },
-    State: {
-        type: String,
-        required: true
-    }
-},
+
 BillingAddressDetails: {
     BillingAddress: {
         type: String,
-        required: true
+        
     },
     BillingCountry: {
         type: String,
-        required: true
+        
     },
     BillingCity: {
         type: String,
-        required: true
+        
     },
     BillingPostalCode: {
         type: String,
-        required: true
+        
     },
     BillingState: {
         type: String,
-        required: true
+        
     }
 },
 DescriptionDetails: {
@@ -82,14 +95,14 @@ Convertedstatus:{
 },
 Eid:{
 type:String,
-required:true
+required: true
 },
+
 Status:{
     type: String,
     required: true
 }
+}]
 
-
-
-})
-module.exports = mongoose.model('customerconvert',Customerconverstion)
+});
+module.exports = mongoose.model('customconvert',Customerconverstion);
