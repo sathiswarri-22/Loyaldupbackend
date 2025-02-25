@@ -1,5 +1,6 @@
 const express = require('express');
 const Product = require('../Model/Inventory');
+const shortid = require('shortid');
 const router = express.Router();
 
 
@@ -12,7 +13,12 @@ router.post('/add-product', async (req, res) => {
              });
          }
  
+         const randomNum = Math.floor(100 + Math.random() * 900);
+
+         const ProductId = `PROD-${randomNum}`;
+
          const newProduct = new Product({
+            productId : ProductId,
             Itemcode,
             Model,
             price,
@@ -68,5 +74,7 @@ router.post('/add-product', async (req, res) => {
        }) ; 
      }
  });
+ 
+
  
 module.exports = router;

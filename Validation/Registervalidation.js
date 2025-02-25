@@ -127,8 +127,29 @@ const Joi = require('joi');
     return serviceSchema.validate(datas);
   }
 
+  const ResetPasswordvalidation = datas => {
+    const ResetpasswordSchema = Joi.object({
+      Eid : Joi.string().min(3).optional(),
+      password: Joi.string().min(3).optional(),
+      confirmPassword: Joi.string().min(3).optional(),
+    });
+
+    return ResetpasswordSchema.validate(datas);
+  }
+
+  const Headvalidation = datas => {
+    const HeadSchema = Joi.object({
+      password: Joi.string().min(3).optional(),
+      confirmpassword: Joi.string().min(3).optional(),
+    });
+
+    return HeadSchema.validate(datas);
+  }
+
   module.exports.loginvalidation = loginvalidation;
   module.exports.registervalidation = registervalidation;
   module.exports.headregistervalidation = headregistervalidation;
   module.exports.passwordvalidation = passwordvalidation;
   module.exports.Servicevalidation = Servicevalidation;
+  module.exports.ResetPasswordvalidation = ResetPasswordvalidation;
+  module.exports.Headvalidation = Headvalidation;

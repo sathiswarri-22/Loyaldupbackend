@@ -7,14 +7,12 @@ const fs = require('fs');
 const CommonTeam = require('../Model/CommonTeam');
 const verifyToken = require('../VerifyToken');
 const HeadEnquiry = require('../Model/HeadEnquiry');
-const Customerconverstion = require('../Model/Customerconvertion')
+const Customerconvertion = require('../Model/Customerconvertion')
 const ServiceEngineervist = require('../Model/ServiceEngineervisit');
 const Productrequest = require('../Model/Productrequest');
 const Headregi = require('../Model/Headregi');
-const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation} = require('../validation/Registervalidation');
-const verifytoken = require('../VerifyToken');
+const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation,ResetPasswordvalidation, Headvalidation} = require('../validation/Registervalidation');
 const CustomerNotConverted = require('../Model/CustomerNotConverted');
-const Customerconvertion = require('../Model/Customerconvertion');
 require('dotenv').config();
 const router = express.Router();
 
@@ -301,20 +299,20 @@ router.post('/login', async (req, res) => {
     });
     
 router.put('/reset-password', async(req,res) =>{
-    const { error, value } = loginvalidation(req.body);
+    const { error, value } = ResetPasswordvalidation(req.body);
     if (error) {
       return res.status(400).json({
         message: error.details[0].message
       });
     }
 
-     const {password,confirmpassword} = value;
+     const {password,confirmPassword} = value;
      const {Eid} = req.body;
 
-     if (!password||!confirmpassword ||!Eid) {
+     if (!password||!confirmPassword ||!Eid) {
         return res.status(400).json({ message: 'Password is required' });
     }
-    if(password !== confirmpassword){
+    if(password !== confirmPassword){
         return res.status(400).json({message:'password do not match'});
     }
      try{
@@ -345,7 +343,7 @@ router.put('/reset-headerpassword',verifyToken,async(req,res) =>{
             message: 'Permission Denied, Only Admin Head can register '
         });
     }
-    const { error, value } = passwordvalidation(req.body);
+    const { error, value } = Headvalidation(req.body);
     if (error) {
       return res.status(400).json({
         message: error.details[0].message
@@ -576,7 +574,7 @@ router.get('/getenquiryforsaletam/:Eid',verifyToken,async(req,res)=>{
     const {Eid} = req.params;
     console.log(req.params)
     try{
-     const getdatas = await HeadEnquiry.find({Eid:Eid , Status: 'Enquiry-2stage'});
+     const getdatas = await HeadEnquiry.find({Eid:Eid });
      console.log(Eid);
      console.log(getdatas);
      if (getdatas && getdatas.length > 0) {
@@ -869,66 +867,7 @@ router.post('/productrequest', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/productrequest', verifyToken, async (req, res) => {
-    
-    console.log("req.body:", req.body);  
-        
-    
-        const { error, value } = Productvalidation(req.body); 
-    
-        if (error) {
-            return res.status(400).json({
-                message: error.details[0].message
-            });
-        }
-    
-    
-    const { name, email, companyname,Eid,Description,contactpersonname,quantity,productname,Employeeid } = value;
-    console.log("req.body:", req.body);
-    try {   
-        const user = req.user;
-        console.log(user); 
 
-        if (!name || !email || !Employeeid ||!Eid) {
-            return res.status(400).json({
-                message: 'Name, email, Fileupload, and assigningId are required'
-            });
-        }
-       
-
-        const newWork = new Productrequest({
-            Eid,  
-            name,
-            email,
-            companyname,
-            Description,
-            Employeeid,
-            contactpersonname,
-            quantity,
-            productname,
-            Status: 'products-status',
-            
-        });
-
-        const savedEmployee = await newWork.save();
-
-        return res.status(200).json({
-            message: "Registration Successful",
-            user: {
-                name: savedEmployee.name,
-                email: savedEmployee.email,
-                Eid: savedEmployee.Eid,
-                Description: savedEmployee.Description,
-                Employeeid: savedEmployee.Employeeid
-            }
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: error.message
-        });
-    }
-});
 
 
 router.get('/headenquiry', verifyToken, async (req, res) => {
@@ -1089,5 +1028,65 @@ router.get('/getenquiries/:Eid', verifyToken, async (req, res) => {
     }
 });
 
+
+
+router.get('/Enquirystatus/:EnquiryNo',verifyToken,async(req,res) => {
+    const {EnquiryNo} = req.params;
+
+    try {
+        const Enquiry1 = await HeadEnquiry.findOne({EnquiryNo});
+        const Enquiry2 = await Customerconvertion.findOne({EnquiryNo});
+
+if( Enquiry1 || Enquiry2 ) {
+    const result = {
+        EnquiryNo,
+        Enquiry1 : Enquiry1 || null,
+        Enquiry2 : Enquiry2 || null,
+    };
+    res.json(result)
+}
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error fetching enquiry status' });
+    }
+})
+router.get('/todayviewleadenquiry', verifyToken, async (req, res) => {
+    const user = req.user;  
+
+    if (user.role !== 'Lead filler') {
+        return res.status(403).json({
+            message: 'Permission denied'
+        });
+    }
+
+    try {
+        
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);  
+
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);  
+
+        
+        const viewenquiries = await HeadEnquiry.find({
+            createdBy: user.role,  
+            createdAt: { $gte: todayStart, $lte: todayEnd }  
+        }).select(' EnquiryNo LeadDetails ContactDetails AddressDetails DescriptionDetails createdAt');  
+
+        if (!viewenquiries || viewenquiries.length === 0) {
+            return res.status(400).json({
+                message: 'No data available'
+            });
+        }
+        console.log('viewleadenquiryesdetails', viewenquiries);
+
+        return res.status(200).json(viewenquiries);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: 'Internal server error'
+        });
+    }
+});
 
 module.exports = router;

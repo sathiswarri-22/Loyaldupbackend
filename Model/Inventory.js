@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
+const shortid = require('shortid');
+
 
 const InventorySchema = new mongoose.Schema({
+    productId : {
+           type: String,
+           unique : true,
+    },
         Itemcode: {
             type: String,
             required: true
@@ -31,4 +37,4 @@ const InventorySchema = new mongoose.Schema({
         }
     }, { timestamps: true });
 
-module.exports = mongoose.model('Inventory1', InventorySchema);
+module.exports = mongoose.model('Inventory', InventorySchema);

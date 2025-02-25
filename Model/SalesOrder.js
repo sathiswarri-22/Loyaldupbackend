@@ -1,52 +1,121 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const shortid = require ('shortid');
 
-const Salesorderschema = new mongoose.Schema({
-    orderId: 
-    { type: String,
-      required: true,
-       unique: true 
+const SalesOrderSchema = new mongoose.Schema({
+
+  salesOrderId: { 
+    type: String, 
+    unique: true 
+  },
+  salesOrderDetails: {
+    customerName:{ 
+      type: String,
+      required: true 
     },
-    customername : {
-        type : String,
-        required : true
+    quoteNumber: { 
+      type: String, 
+      required: true 
     },
-    subject : {
-        type : String,
-        required : true
+    subject: { 
+      type: String 
     },
-    status : {
-        type : String,
-        required : true
+    salesOrderDate: { 
+      type: Date, 
+      required: true 
     },
-    POnumber : {
-        type : String,
-        required : true
+    status: { 
+      type: String, 
+      enum: ["Pending", "Confirmed", "Shipped", "Delivered"], 
+      required: true 
     },
-    paymentTerms : {
-        type : String,
-        required : true
+    assignedTo: { 
+      type: String 
     },
-    Quotenumber : {
-        type : String,
-        required : true
+    poNumber: { 
+      type: String 
     },
-    salesOrderDate : {
-        type : String,
-        required : true
+    poDate: { 
+      type: Date 
     },
-    AssignedTo : {
-        type : String,
-        required : true
+    paymentTerms: { 
+        type: String 
     },
-    PoDate : {
-        type : Date,
-        required : true,
-        default: Date.now
+  },
+  termsAndConditions: { 
+    text: { 
+        type: String 
+    } },
+  items: [
+    {
+      itemName: { 
+        type: String,
+         required: true 
+        },
+      quantity: { 
+        type: Number, 
+        required: true 
     },
-    leadStatus: {
-        type : String,
-        required : true
+      listPrice: { 
+        type: Number, 
+        required: true 
+    },
+      discount: { 
+        type: Number, 
+        default: 0 
+    },
+      tax: { 
+        type: Number, 
+        default: 0 
+    },
+      totalPrice: { 
+        type: Number, 
+        required: true 
+    },
+    },
+  ],
+  summary: {
+    itemsTotal: { 
+        type: Number, 
+        required: true 
+    },
+    discountTotal: { 
+        type: Number, 
+        default: 0 
+    },
+    shippingHandling: { 
+        type: Number, 
+        default: 0 
+    },
+    preTaxTotal: { 
+        type: Number, 
+        required: true 
+    },
+    taxesForShipping: { 
+        type: Number, 
+        default: 0 
+    },
+    transitInsurance: { 
+        type: Number, 
+        default: 0 
+    },
+    installationCharges: { 
+        type: Number, 
+        default: 0 
+    },
+    taxForInstallation: { 
+        type: Number, 
+        default: 0 
+    },
+    adjustments: { 
+        type: Number, 
+        default: 0 
+    },
+    grandTotal: { 
+        type: Number, 
+        required: true 
     }
-})
+  }
+  
+},{timestamps:true});
 
-module.exports = mongoose.model('sales order',Salesorderschema);
+module.exports = mongoose.model("Sales-Order", SalesOrderSchema);

@@ -5,6 +5,7 @@ const SalesTeamRoutes = require('./router/SalesTeam');
 const Passwordrest = require ('./router/Passwordrest');
 const Addproduct = require ('./router/Addproduct');
 const salesorder = require ('./router/Salesorder');
+const customerconversion = require('./router/Customerconvertion')
 const cors = require('cors');
 const bodyparser = require('body-parser');
 const corsOption = "http://localhost:5173";
@@ -28,6 +29,8 @@ app.use('/api', SalesTeamRoutes);
 app.use('/api-password',Passwordrest);
 app.use('/api-inventory',Addproduct)
 app.use('/api-salesorder',salesorder)
+app.use('/api/cc',customerconversion)
+
 
 app.get('/', async (req, res) => {
   res.send("Hello world");
