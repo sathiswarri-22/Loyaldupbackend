@@ -11,7 +11,7 @@ const Customerconvertion = require('../Model/Customerconvertion')
 const ServiceEngineervist = require('../Model/ServiceEngineervisit');
 const Productrequest = require('../Model/Productrequest');
 const Headregi = require('../Model/Headregi');
-const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation,ResetPasswordvalidation, Headvalidation} = require('../validation/Registervalidation');
+const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation,ResetPasswordvalidation, Headvalidation , emailvalidation} = require('../validation/Registervalidation');
 const CustomerNotConverted = require('../Model/CustomerNotConverted');
 require('dotenv').config();
 const router = express.Router();

@@ -137,6 +137,16 @@ const Joi = require('joi');
     return ResetpasswordSchema.validate(datas);
   }
 
+  const emailvalidation = datas => {
+    const resetSchema = Joi.object({
+      email: Joi.string().min(3).optional(),
+      name: Joi.string().min(3).optional()
+    });
+
+    return resetSchema.validate(datas);
+  };
+
+
   const Headvalidation = datas => {
     const HeadSchema = Joi.object({
       password: Joi.string().min(3).optional(),
@@ -153,3 +163,4 @@ const Joi = require('joi');
   module.exports.Servicevalidation = Servicevalidation;
   module.exports.ResetPasswordvalidation = ResetPasswordvalidation;
   module.exports.Headvalidation = Headvalidation;
+  module.exports.emailvalidation = emailvalidation;
