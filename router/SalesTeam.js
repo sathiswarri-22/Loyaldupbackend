@@ -141,7 +141,9 @@ router.post('/login', async (req, res) => {
                 message: 'User login successful',
                 role: user.role,
                 token: token,
-                Eid: user.Eid
+                Eid: user.Eid,
+                Name : user.name,
+                Email : user.email
             });
         } else {
             console.log('Header found:', header);
@@ -591,47 +593,114 @@ router.get('/getenquiryforsaletam/:Eid',verifyToken,async(req,res)=>{
         return res.status(500).json({ message: 'Internal server error', error: err });
     }
 })
+
 router.post('/customerconversion', verifyToken, async (req, res) => {
-   
     try {
-        console.log("Request Body:", req.body);
-      const convertcustomer = await HeadEnquiry.findOne({ EnquiryNo: req.body.EnquiryNo });
-      console.log("Found Customer:", convertcustomer);
-      console.log("Eid from convertcustomer:", convertcustomer.Eid);
-      if (!convertcustomer) {
-        return res.status(400).json('No data found');
-      }
-      if (!convertcustomer.ContactDetails || !convertcustomer.ContactDetails.MobileNumber || !convertcustomer.ContactDetails.PrimaryMail) {
-        return res.status(400).json('Contact details missing');
-      }
-      const randomId = Math.floor(Math.random() * 1000000);
-      const customid = `CUS-${randomId.toString().padStart(5, '0')}`;
-      const customer = new Customerconverstion({
-        EnquiryNo: req.body.EnquiryNo,
-        CustomerDetails: {
-          MobileNumber: convertcustomer.ContactDetails.MobileNumber,
-          PrimaryMail: convertcustomer.ContactDetails.PrimaryMail,
-          PANnumber: req.body.CustomerDetails.PANnumber,
-          opportunitynumber: req.body.CustomerDetails.opportunitynumber,
-          GSTNnumber: req.body.CustomerDetails.GSTNnumber,
-        },
-        AddressDetails: convertcustomer.AddressDetails,
-        BillingAddressDetails: req.body.BillingAddressDetails,
-        DescriptionDetails: req.body.DescriptionDetails,
-        Eid: convertcustomer.Eid,
-        Convertedstatus: req.body.Convertedstatus,
-        CustomerId:customid,
-        Status: 'Enquiry-4thstage'
-      });
-  
-      console.log("Successfully customer is converted:", customer);
-      await customer.save();
-      return res.status(201).json({ message: 'Customer conversion successful', customer });
+    
+        const { EnquiryNo,PANnumber,GSTNnumber,CustomerDetails,BillingAddressDetails,DescriptionDetails,Eid } = req.body;
+        
+        if (!EnquiryNo) {
+            return res.status(400).json('Missing required field: EnquiryNo');
+        }
+
+        if (!PANnumber || !GSTNnumber) {
+            return res.status(400).json('Missing required CustomerDetails fields: PANnumber or GSTNnumber');
+        }
+
+        if (!CustomerDetails || !CustomerDetails.opportunitynumber) {
+            return res.status(400).json('Missing required CustomerDetails field: opportunitynumber');
+        }
+
+        if (!BillingAddressDetails || !BillingAddressDetails.BillingAddress || !BillingAddressDetails.BillingCountry|| !BillingAddressDetails.BillingCity || !BillingAddressDetails.BillingPostalCode || !BillingAddressDetails.BillingState) {
+            return res.status(400).json('Missing required BillingAddressDetails fields');
+        }
+
+        if (!DescriptionDetails) {
+            return res.status(400).json('Missing required DescriptionDetails');
+        }
+        const customerDetails = await HeadEnquiry.findOne({ EnquiryNo: req.body.EnquiryNo });
+        console.log("i get the enquirydetails",customerDetails);
+
+        if (!customerDetails || !customerDetails.ContactDetails.MobileNumber || !customerDetails.ContactDetails.PrimaryMail) {
+            return res.status(400).json('Missing required CustomerDetails: MobileNumber or PrimaryMail');
+        }
+
+        const existingCustomer = await Customerconvertion.findOne({
+            PANnumber,
+            GSTNnumber,
+        });
+
+        if (existingCustomer) {
+            // Check if the EnquiryNo already exists in the customer's customerconvert array
+            const existingConversion = existingCustomer.customerconvert.find(c => c.EnquiryNo === EnquiryNo);
+            if (existingConversion) {
+                return res.status(400).json('This enquiry has already been added to the customer');
+            }
+
+            // Prepare the new conversion data
+            const newConversionData = {
+                EnquiryNo,
+                clientName: customerDetails.LeadDetails.clientName,
+                CustomerDetails: {
+                    MobileNumber: customerDetails.ContactDetails.MobileNumber,
+                    PrimaryMail: customerDetails.ContactDetails.PrimaryMail,
+                    opportunitynumber: req.body.CustomerDetails.opportunitynumber,
+                },
+                DescriptionDetails,
+                BillingAddressDetails,
+                Eid:req.body.Eid,
+                Status: 'Enquiry-4thstage',
+            };
+
+            // Append the new conversion to the existing customerconvert array
+            existingCustomer.customerconvert.push(newConversionData);
+
+            // Save the updated customer document
+            await existingCustomer.save();
+
+            return res.status(200).json({
+                message: 'Customer conversion added successfully',
+                customer: existingCustomer,
+            });
+        } else {
+            const randomId = Math.floor(Math.random() * 1000000);
+            const customid = `CUS-${randomId.toString().padStart(5, '0')}`;
+            const newCustomer = new Customerconvertion({
+                PANnumber,
+                GSTNnumber,
+                companyName: customerDetails.LeadDetails.companyName,
+                AddressDetails: customerDetails.AddressDetails,
+                CustomerId: customid,
+                customerconvert: [{
+                    EnquiryNo,
+                    clientName: customerDetails.LeadDetails.clientName,
+                    CustomerDetails: {
+                        MobileNumber: customerDetails.ContactDetails.MobileNumber,
+                        PrimaryMail: customerDetails.ContactDetails.PrimaryMail,
+                        opportunitynumber: req.body.CustomerDetails.opportunitynumber,
+                    },
+                    DescriptionDetails,
+                    Convertedstatus:"yes",
+                    BillingAddressDetails,
+                    Eid:req.body.Eid,
+                    Status: 'Enquiry-4thstage',
+                }],
+            });
+            await newCustomer.save();
+
+            return res.status(201).json({
+                message: 'Customer conversion successful',
+                customer: newCustomer,
+            });
+        }
     } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({ message: 'Internal server error', error: err.message || err });
+        console.error("Error occurred:", err);
+        return res.status(500).json({
+            message: 'Internal server error',
+            error: err.message || err,
+        });
     }
-  });
+});
 
   router.post('/customernotconverted', verifyToken, async (req, res) => {
     const { EnquiryNo, remarks } = req.body;
@@ -639,7 +708,8 @@ router.post('/customerconversion', verifyToken, async (req, res) => {
     try {
       const notConverted = new CustomerNotConverted({
         EnquiryNo,
-        remarks
+        remarks,
+        Convertedstatus: "no"
       });
   
       await notConverted.save();
@@ -1051,14 +1121,6 @@ if( Enquiry1 || Enquiry2 ) {
     }
 })
 router.get('/todayviewleadenquiry', verifyToken, async (req, res) => {
-    const user = req.user;  
-
-    if (user.role !== 'Lead filler') {
-        return res.status(403).json({
-            message: 'Permission denied'
-        });
-    }
-
     try {
         
         const todayStart = new Date();
@@ -1069,7 +1131,6 @@ router.get('/todayviewleadenquiry', verifyToken, async (req, res) => {
 
         
         const viewenquiries = await HeadEnquiry.find({
-            createdBy: user.role,  
             createdAt: { $gte: todayStart, $lte: todayEnd }  
         }).select(' EnquiryNo LeadDetails ContactDetails AddressDetails DescriptionDetails createdAt');  
 
@@ -1085,6 +1146,190 @@ router.get('/todayviewleadenquiry', verifyToken, async (req, res) => {
         console.error(err);
         return res.status(500).json({
             message: 'Internal server error'
+        });
+    }
+});
+
+router.put('/assignedtoservice', verifyToken, async (req, res) => {
+    const { Eid,EnquiryNo } = req.body;
+    console.log('Received Eid:', Eid);
+    console.log('Received EnquiryNo:', EnquiryNo);
+
+    
+    if (!Eid || !EnquiryNo) {
+        return res.status(400).json({ message: 'Eid and EnquiryNos are required.' });
+    }
+    let enquiryNumbers = [];
+    if (Array.isArray(EnquiryNo)) {
+        enquiryNumbers = EnquiryNo;
+    } else if (typeof EnquiryNo === 'string') {
+        enquiryNumbers = [EnquiryNo];  
+    } else {
+        return res.status(400).json({ message: 'EnquiryNos must be a string or an array.' });
+    }
+
+    try {
+        console.log('Querying for EnquiryNos:', enquiryNumbers);
+        const enquiriesToUpdate = await HeadEnquiry.find({
+            EnquiryNo: { $in: enquiryNumbers },
+            Status: 'Enquiry-2stage'
+        });
+        console.log('Enquiries found:', enquiriesToUpdate);
+        if (enquiriesToUpdate.length === 0) {
+            return res.status(404).json({ message: 'No enquiries found to update with the specified EnquiryNos and Status.' });
+        }
+        const updateAllocated = await HeadEnquiry.updateMany(
+            { 
+                EnquiryNo: { $in: enquiryNumbers },
+                Status: 'Enquiry-2stage' 
+            },
+            { $set: { Eid} }
+        );
+
+        
+        console.log('Update result:', updateAllocated);
+
+       
+        if (updateAllocated.nModified > 0) {
+            const message = updateAllocated.nModified === 1 
+                ? 'One enquiry updated successfully' 
+                : `${updateAllocated.nModified} enquiries updated successfully`;
+                console.log(message);
+        } 
+
+        return res.status(200).json({updateAllocated });
+    } catch (err) {
+        console.error('Error occurred:', err);
+        return res.status(500).json({ message: 'Internal server error', error: err });
+    }
+});
+
+router.get('/getotheremployeeEid',verifyToken,async(req,res)=>{
+    try{
+        const getallothersEid = await  CommonTeam.find({role: 'Service Engineer',role: 'Engineer'});
+        if(!getallothersEid){
+          res.status(400).json({message:'No data found'});
+        } 
+         return res.status(200).json({message:'sucessfully getted data',getallothersEid});
+    }catch(err){
+        console.error("Error:", err);
+        return res.status(500).json({ message: 'Internal server error', error: err.message || err });
+    }
+});
+
+
+router.post('/service&project', verifyToken, upload.single('File'), async (req, res) => {
+    
+    console.log("req.body:", req.body);  
+        
+    
+        const { error, value } = Servicevalidation(req.body); 
+    
+        if (error) {
+            return res.status(400).json({
+                message: error.details[0].message
+            });
+        }
+    
+    
+    const { name, email,Eid,Description } = value;
+    console.log("req.body:", req.body);
+    try {   
+    
+        if (!name || !email ||!Eid ||!req.file) {
+            return res.status(400).json({
+                message: 'Name, email, File, and assigningId are required'
+            });
+        }
+        const fileUploadPath = req.file ? req.file.filename : null;
+
+        const newWork = new ServiceEngineervist({
+            Eid,  
+            name,
+            email,
+            File: fileUploadPath,
+            Description,
+            Status: 'work-status',
+            role: ["sales head", "md"]
+        });
+
+        const savedEmployee = await newWork.save();
+
+        return res.status(200).json({
+            message: "Registration Successful",
+            user: {
+                name: savedEmployee.name,
+                email: savedEmployee.email,
+                Eid: savedEmployee.Eid,
+                File: savedEmployee.File,
+                Description: savedEmployee.Description,
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
+
+router.post('/productrequest', verifyToken, async (req, res) => {
+    
+    console.log("req.body:", req.body);  
+        
+    
+        const { error, value } = Productvalidation(req.body); 
+    
+        if (error) {
+            return res.status(400).json({
+                message: error.details[0].message
+            });
+        }
+    
+    
+    const { name, email, companyname,Eid,Description,contactpersonname,quantity,productname,Employeeid } = value;
+    console.log("req.body:", req.body);
+    try {   
+        const user = req.user;
+        console.log(user); 
+
+        if (!name || !email || !Employeeid ||!Eid) {
+            return res.status(400).json({
+                message: 'Name, email, Fileupload, and assigningId are required'
+            });
+        }
+       
+
+        const newWork = new Productrequest({
+            Eid,  
+            name,
+            email,
+            companyname,
+            Description,
+            Employeeid,
+            contactpersonname,
+            quantity,
+            productname,
+            Status: 'products-status',
+            
+        });
+
+        const savedEmployee = await newWork.save();
+
+        return res.status(200).json({
+            message: "Registration Successful",
+            user: {
+                name: savedEmployee.name,
+                email: savedEmployee.email,
+                Eid: savedEmployee.Eid,
+                Description: savedEmployee.Description,
+                Employeeid: savedEmployee.Employeeid
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
         });
     }
 });

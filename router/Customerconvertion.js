@@ -5,6 +5,7 @@ const router = express.Router();
 const Inventory = require('../Model/Inventory'); 
 const HeadEnquiry = require('../Model/HeadEnquiry')
 const Customerconverstion = require('../Model/Customerconvertion')
+const CustomerNotConvert = require('../Model/CustomerNotConverted')
 
 router.post('/customerconvert', verifytoken, async (req, res) => {
     try {
@@ -230,6 +231,60 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             }
         });
 
+        router.get('/todayviewyescustomer', verifytoken, async (req, res) => {
+
+            try {
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);  
+                const todayEnd = new Date();
+                todayEnd.setHours(23, 59, 59, 999);  
+                const viewenquiries = await Customerconverstion.find({  
+                    createdAt: { $gte: todayStart, $lte: todayEnd },
+                    "customerconvert.Convertedstatus": "yes"   
+                }).select(' customerconvert AddressDetails createdAt');  
         
+                if (!viewenquiries || viewenquiries.length === 0) {
+                    return res.status(400).json({
+                        message: 'No data available'
+                    });
+                }
+                console.log('viewleadenquiryesdetails', viewenquiries);
+        
+                return res.status(200).json(viewenquiries);
+            } catch (err) {
+                console.error(err);
+                return res.status(500).json({
+                    message: 'Internal server error'
+                });
+            }
+        });
+        router.get('/todayviewnocustomer', verifytoken, async (req, res) => {
+            try {
+              const todayStart = new Date();
+              todayStart.setHours(0, 0, 0, 0);  
+              const todayEnd = new Date();
+              todayEnd.setHours(23, 59, 59, 999);  
+          
+              const viewenquiries = await CustomerNotConvert.find({  
+                createdAt: { $gte: todayStart, $lte: todayEnd },
+              })
+          
+              if (!viewenquiries || viewenquiries.length === 0) {
+                return res.status(400).json({
+                  message: 'No data available'
+                });
+              }
+          
+              console.log('viewleadenquiryesdetails', viewenquiries);
+              return res.status(200).json(viewenquiries);
+          
+            } catch (err) {
+              console.error(err);
+              return res.status(500).json({
+                message: 'Internal server error'
+              });
+            }
+          });
+          
         
 module.exports = router;

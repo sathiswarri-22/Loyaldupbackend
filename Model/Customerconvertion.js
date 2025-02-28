@@ -91,7 +91,6 @@ DescriptionDetails: {
 Convertedstatus:{
  type:String,
  enum:['yes','no'],
- required:true
 },
 Eid:{
 type:String,
@@ -104,5 +103,5 @@ Status:{
 }
 }]
 
-});
+},{timestamps : true});
 module.exports = mongoose.model('customconvert',Customerconverstion);
