@@ -1334,4 +1334,40 @@ router.post('/productrequest', verifyToken, async (req, res) => {
     }
 });
 
+router.get('/alldayleadenquiry', verifyToken, async (req, res) => {
+    try {
+        // Fetch fromDate and toDate from query parameters
+        const { fromDate, toDate } = req.query;  // Changed to req.query
+        
+        const dateFilter = {};
+        if (fromDate) dateFilter.createdAt = { $gte: new Date(fromDate) };
+        if (toDate) {
+            if (!dateFilter.createdAt) dateFilter.createdAt = {};
+            dateFilter.createdAt.$lte = new Date(toDate);
+        }
+
+        // Fetching enquiries based on the date range
+        const viewenquiries = await HeadEnquiry.find({
+            ...dateFilter
+        });
+
+        // If no enquiries are found
+        if (!viewenquiries || viewenquiries.length === 0) {
+            return res.status(400).json({
+                message: 'No data available'
+            });
+        }
+
+        // Returning the found enquiries
+        return res.status(200).json(viewenquiries);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: 'Internal server error'
+        });
+    }
+});
+
+
+
 module.exports = router;

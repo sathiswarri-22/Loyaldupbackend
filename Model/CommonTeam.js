@@ -46,7 +46,7 @@ const CommonTeam = new mongoose.Schema({
     },
     role:{
         type:String,
-        enum:["sales head","Engineer","Service Engineer","Sales Employee","Inventory Manager","Lead filler"],
+        enum:["sales head","Engineer","Service Engineer","Sales Employee","Inventory Manager","Lead filler","Stock Filler"],
         required:true
     },
     EOD:{

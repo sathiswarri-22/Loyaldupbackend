@@ -35,7 +35,7 @@ const Joi = require('joi');
         }),
 
       role: Joi.string()
-        .valid("sales head","Engineer","Service Engineer","Sales Employee","Inventory Manager","Lead filler")  
+        .valid("sales head","Engineer","Service Engineer","Sales Employee","Inventory Manager","Lead filler","Stock Filler")  
         .required()
         .messages({
           'string.base': '"Role" should be a string',
