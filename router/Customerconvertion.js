@@ -5,7 +5,8 @@ const router = express.Router();
 const Inventory = require('../Model/Inventory'); 
 const HeadEnquiry = require('../Model/HeadEnquiry')
 const Customerconverstion = require('../Model/Customerconvertion')
-const CustomerNotConvert = require('../Model/CustomerNotConverted')
+const CustomerNotConvert = require('../Model/CustomerNotConverted');
+const CustomerNotConverted = require('../Model/CustomerNotConverted');
 
 router.post('/customerconvert', verifytoken, async (req, res) => {
     try {
@@ -285,6 +286,25 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
               });
             }
           });
+          
+          router.get('/not-converted/:Eid', verifytoken, async (req, res) => {
+            try {
+                const { Eid } = req.params; 
+        
+                const customers = await CustomerNotConverted.find({ Eid: Eid });
+        
+                if (customers.length === 0) {
+                    return res.status(404).json({ message: 'No customers found for the provided Eid' });
+                }
+        
+                res.status(200).json(customers);  
+        
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Server error. Please try again later.' });
+            }
+        });
+        
           
         
 module.exports = router;

@@ -702,26 +702,32 @@ router.post('/customerconversion', verifyToken, async (req, res) => {
     }
 });
 
-  router.post('/customernotconverted', verifyToken, async (req, res) => {
-    const { EnquiryNo, remarks } = req.body;
+router.post('/customernotconverted', verifyToken, async (req, res) => {
+    const { EnquiryNo, remarks, Eid } = req.body;  
   
     try {
-      const notConverted = new CustomerNotConverted({
-        EnquiryNo,
-        remarks,
-        Convertedstatus: "no"
-      });
-  
-      await notConverted.save();
-  
-      res.status(200).json({
-        message: "Lead submitted successfully"
-      });
+        if (!Eid) {
+            return res.status(400).json({ message: "Eid is required" });  
+        }
+
+        const notConverted = new CustomerNotConverted({
+            EnquiryNo,
+            remarks,
+            Eid,  
+            Convertedstatus: "no"  
+        });
+
+        await notConverted.save();  
+
+        res.status(200).json({
+            message: "Lead submitted successfully"
+        });
     } catch (error) {
-      console.error(error); 
-      res.status(500).json({ error: 'Server error. Lead submission failed.' });
+        console.error(error);
+        res.status(500).json({ error: 'Server error. Lead submission failed.' });
     }
-  });
+});
+
   
   
   router.get('/getcustomerconverstion', verifyToken, async (req, res) => {
