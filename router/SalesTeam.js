@@ -1212,7 +1212,7 @@ router.put('/assignedtoservice', verifyToken, async (req, res) => {
 
 router.get('/getotheremployeeEid',verifyToken,async(req,res)=>{
     try{
-        const getallothersEid = await  CommonTeam.find({role: 'Service Engineer',role: 'Engineer'});
+        const getallothersEid = await  CommonTeam.find({ role: { $in: ['Service Engineer', 'Engineer'] } });
         if(!getallothersEid){
           res.status(400).json({message:'No data found'});
         } 
@@ -1222,7 +1222,6 @@ router.get('/getotheremployeeEid',verifyToken,async(req,res)=>{
         return res.status(500).json({ message: 'Internal server error', error: err.message || err });
     }
 });
-
 
 router.post('/service&project', verifyToken, upload.single('File'), async (req, res) => {
     
