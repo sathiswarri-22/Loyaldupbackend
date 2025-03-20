@@ -24,11 +24,11 @@ const InventorySchema = new mongoose.Schema({
             required: true
         },
         Inward: {
-            type: String,
+            type: Number,
             required: true
         },
         Outward: {
-            type: String,
+            type: Number,
             required: true
         },
         Current: {
