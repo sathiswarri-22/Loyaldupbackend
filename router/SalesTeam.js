@@ -8,10 +8,12 @@ const CommonTeam = require('../Model/CommonTeam');
 const verifyToken = require('../VerifyToken');
 const HeadEnquiry = require('../Model/HeadEnquiry');
 const Customerconvertion = require('../Model/Customerconvertion')
-const ServiceEngineervist = require('../Model/ServiceEngineervisit');
+const ServiceEngineervisit = require('../Model/ServiceEngineervisit');
 const Productrequest = require('../Model/Productrequest');
+const Servicedetails = require('../Model/Servicedetails');
 const Headregi = require('../Model/Headregi');
-const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation,ResetPasswordvalidation, Headvalidation , emailvalidation} = require('../validation/Registervalidation');
+const Quatation = require('../Model/Quatation');
+const {loginvalidation,registervalidation,headregistervalidation,passwordvalidation,Servicevalidation,Productvalidation,ResetPasswordvalidation, Headvalidation ,servicedetailsvalidation} = require('../validation/Registervalidation');
 const CustomerNotConverted = require('../Model/CustomerNotConverted');
 require('dotenv').config();
 const router = express.Router();
@@ -231,7 +233,7 @@ router.post('/login', async (req, res) => {
             });
         }
     
-        const { name, email, password, role, JOD, EOD, address, Currentsalary, CompanyResources, Remarks, contactnumber } = value;
+        const { name, email, password, role, JOD, EOD, address, Currentsalary, CompanyResources, Remarks, contactnumber,givenStatus } = value;
         
         console.log("Files:", req.files);
         console.log('name',name);
@@ -275,6 +277,7 @@ router.post('/login', async (req, res) => {
                 JOD,
                 EOD,
                 contactnumber,
+                givenStatus,
                 Fileupload: fileUploadPath,
                 profileimg: profileImgPath,
                 createdBy: req.user.email
@@ -787,10 +790,7 @@ router.get('/getsalesheadEid',verifyToken,async(req,res)=>{
         if(!getallprofile || getallprofile.length === 0){
           res.status(400).json({message:'No data found'});
         } 
-
-        const eids = getallprofile.map(profile => profile.Eid);
-        console.log(eids);
-         return res.status(200).json({message:'sucessfully getted data',Eid:eids});
+         return res.status(200).json({message:'sucessfully getted data',getallprofile});
     }catch(err){
         console.error("Error:", err);
         return res.status(500).json({ message: 'Internal server error', error: err.message || err });
@@ -824,7 +824,7 @@ router.get('/salesheadviewallprofile',verifyToken,async(req,res)=>{
         return res.status(500).json({messgae:'Internal server error'},err);
     }
 })
-router.post('/service&project', verifyToken, upload.single('File'), async (req, res) => {
+router.post('/service&project', verifyToken,async (req, res) => {
     
     console.log("req.body:", req.body);  
         
@@ -838,41 +838,53 @@ router.post('/service&project', verifyToken, upload.single('File'), async (req, 
         }
     
     
-    const { name, email, Employeeid,Eid,Description } = value;
+    const { name,companyName,clientName,Date,Location,MachineName,ProductDescription,Problem,Eid,Assessment } = value;
     console.log("req.body:", req.body);
     try {   
         const user = req.user;
         console.log(user); 
 
-        if (!name || !email || !Employeeid ||!Eid ||!req.file) {
+        if (!name || !companyName || !clientName ||!Date ||!Location ||!MachineName||!Eid ||!ProductDescription ||!Problem ||!Assessment) {
             return res.status(400).json({
                 message: 'Name, email, Fileupload, and assigningId are required'
             });
         }
-        const fileUploadPath = req.file ? req.file.filename : null;
+       
 
-        const newWork = new ServiceEngineervist({
-            Eid,  
+        const newWork = new  ServiceEngineervisit({
             name,
-            email,
-            File: fileUploadPath,
-            Description,
-            Employeeid,
+            ReportNo,
+            companyName,
+            clientName,
+            Eid,
+            Date,
+            Location,
+            MachineName,
+            ProductDescription,
+            Problem,
+            Assessment,
             Status: 'work-status',
-            role: user.role
+            
         });
 
-        const savedEmployee = await newWork.save();
+        const workform = await newWork.save();
 
         return res.status(200).json({
             message: "Registration Successful",
             user: {
-                name: savedEmployee.name,
-                email: savedEmployee.email,
-                Eid: savedEmployee.Eid,
-                Fileupload: savedEmployee.Fileupload,
-                Description: savedEmployee.Description,
-                Employeeid: savedEmployee.Employeeid
+                name: workform.name,
+                ReportNo:workform.ReportNo,
+                companyName:workform.companyName,
+                clientName:workform.clientName,
+                Eid:workform,
+                Date:workform,
+                Location:workform,
+                MachineName:workform,
+                ProductDescription:workform,
+                Problem:workform,
+                Assessment:workform,
+                Eid: workform.Eid,
+               
             }
         });
 
@@ -883,65 +895,58 @@ router.post('/service&project', verifyToken, upload.single('File'), async (req, 
     }
 });
 router.post('/productrequest', verifyToken, async (req, res) => {
-    
-    console.log("req.body:", req.body);  
-        
-    
-        const { error, value } = Productvalidation(req.body); 
-    
-        if (error) {
-            return res.status(400).json({
-                message: error.details[0].message
-            });
-        }
-    
-    
-    const { name, email, companyname,Eid,Description,contactpersonname,quantity,productname,Employeeid } = value;
     console.log("req.body:", req.body);
-    try {   
-        const user = req.user;
-        console.log(user); 
-
-        if (!name || !email || !Employeeid ||!Eid) {
-            return res.status(400).json({
-                message: 'Name, email, Fileupload, and assigningId are required'
-            });
-        }
-       
-
-        const newWork = new Productrequest({
-            Eid,  
-            name,
-            email,
-            companyname,
-            Description,
-            Employeeid,
-            contactpersonname,
-            quantity,
-            productname,
-            Status: 'products-status',
-            
+  
+    const {
+      name,
+      email,
+      companyName,
+      Eid,
+      Description,
+      contactpersonname,
+      productDetails,  
+      Employeeid,
+    } = req.body;
+  
+    try {
+      if (!name || !email || !Employeeid || !Eid || !productDetails || productDetails.length === 0) {
+        return res.status(400).json({
+          message: 'Name, email, Employee ID, assigning ID, and at least one product are required.',
         });
-
-        const savedEmployee = await newWork.save();
-
-        return res.status(200).json({
-            message: "Registration Successful",
-            user: {
-                name: savedEmployee.name,
-                email: savedEmployee.email,
-                Eid: savedEmployee.Eid,
-                Description: savedEmployee.Description,
-                Employeeid: savedEmployee.Employeeid
-            }
-        });
-
+      }
+  
+      const newWork = new Productrequest({
+        Eid,
+        name,
+        email,
+        companyName,
+        Description,
+        Employeeid,
+        contactpersonname,
+        productDetails,  
+        Status: 'products-status',
+      });
+  
+      const savedEmployee = await newWork.save();
+  
+      return res.status(200).json({
+        message: "Registration Successful",
+        user: {
+          name: savedEmployee.name,
+          email: savedEmployee.email,
+          Eid: savedEmployee.Eid,
+          Description: savedEmployee.Description,
+          Employeeid: savedEmployee.Employeeid,
+        },
+      });
     } catch (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+      console.error("Error:", error);
+      return res.status(500).json({
+        message: error.message,
+      });
     }
-});
+  });
+  
 
 
 
@@ -1011,7 +1016,7 @@ router.put('/Enquiries/:EnquiryNo', verifyToken, async (req, res) => {
 
     try {
         // Check if enquiry exists in Customerconverstion collection (check the customerconvert array for EnquiryNo)
-        const enquiryExists = await Customerconverstion.findOne({
+        const enquiryExists = await Customerconvertion.findOne({
             "customerconvert.EnquiryNo": EnquiryNo
         });
 
@@ -1022,7 +1027,7 @@ router.put('/Enquiries/:EnquiryNo', verifyToken, async (req, res) => {
         }
 
         // Find the specific subdocument with EnquiryNo and Status "Enquiry-4thstage"
-        const enquiryToUpdate = await Customerconverstion.findOne({
+        const enquiryToUpdate = await Customerconvertion.findOne({
             "customerconvert.EnquiryNo": EnquiryNo,
             "customerconvert.Status": 'Enquiry-4thstage'
         });
@@ -1032,7 +1037,7 @@ router.put('/Enquiries/:EnquiryNo', verifyToken, async (req, res) => {
         }
 
         // Update the Status of the matching subdocument inside the customerconvert array
-        const updatedEnquiry = await Customerconverstion.findOneAndUpdate(
+        const updatedEnquiry = await Customerconvertion.findOneAndUpdate(
             { "customerconvert.EnquiryNo": EnquiryNo, "customerconvert.Status": "Enquiry-4thstage" },
             { $set: { "customerconvert.$.Status": "completed" } },
             { new: true }
@@ -1223,61 +1228,41 @@ router.get('/getotheremployeeEid',verifyToken,async(req,res)=>{
     }
 });
 
-router.post('/service&project', verifyToken, upload.single('File'), async (req, res) => {
-    
-    console.log("req.body:", req.body);  
-        
-    
-        const { error, value } = Servicevalidation(req.body); 
-    
-        if (error) {
-            return res.status(400).json({
-                message: error.details[0].message
-            });
-        }
-    
-    
-    const { name, email,Eid,Description } = value;
-    console.log("req.body:", req.body);
-    try {   
-    
-        if (!name || !email ||!Eid ||!req.file) {
-            return res.status(400).json({
-                message: 'Name, email, File, and assigningId are required'
-            });
-        }
-        const fileUploadPath = req.file ? req.file.filename : null;
-
-        const newWork = new ServiceEngineervist({
-            Eid,  
-            name,
-            email,
-            File: fileUploadPath,
-            Description,
-            Status: 'work-status',
-            role: ["sales head", "md"]
-        });
-
-        const savedEmployee = await newWork.save();
-
-        return res.status(200).json({
-            message: "Registration Successful",
-            user: {
-                name: savedEmployee.name,
-                email: savedEmployee.email,
-                Eid: savedEmployee.Eid,
-                File: savedEmployee.File,
-                Description: savedEmployee.Description,
-            }
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: error.message
-        });
+router.post('/service-project', verifyToken, async (req, res) => {
+    console.log("Received request:", req.body);
+  
+    const { error, value } = Servicevalidation(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
-});
-
+  
+    const { name, companyName, clientName, Eid, Date, Location, MachineName, ProductDescription, Problems, Assessment } = value;
+  
+    try {
+      if (!name || !companyName || !Eid || !clientName) {
+        return res.status(400).json({ message: 'Name, companyName, Eid, and clientName are required' });
+      }
+  
+      const newWork = new ServiceEngineervisit({
+        name, companyName, clientName, Eid, Date,
+        Location, MachineName, ProductDescription, Problems, Assessment,
+        Status: 'work-status'
+      });
+  
+      const Employeevisit = await newWork.save();
+  
+      return res.status(200).json({
+        message: "Successfully completed",
+        user: Employeevisit
+      });
+    } catch (error) {
+      console.error('Database error:', error);
+      return res.status(500).json({
+        message: error.message || 'Internal Server Error'
+      });
+    }
+  });
+  
 router.post('/productrequest', verifyToken, async (req, res) => {
     
     console.log("req.body:", req.body);  
@@ -1341,8 +1326,8 @@ router.post('/productrequest', verifyToken, async (req, res) => {
 
 router.get('/alldayleadenquiry', verifyToken, async (req, res) => {
     try {
-        // Fetch fromDate and toDate from query parameters
-        const { fromDate, toDate } = req.query;  // Changed to req.query
+       
+        const { fromDate, toDate } = req.query;  
         
         const dateFilter = {};
         if (fromDate) dateFilter.createdAt = { $gte: new Date(fromDate) };
@@ -1372,7 +1357,733 @@ router.get('/alldayleadenquiry', verifyToken, async (req, res) => {
         });
     }
 });
+router.post('/servicedetails',verifyToken,async(req,res)=>{
+    if(req.user.role!=='Service Engineer'){
+        return res.status(403).json({
+            message: 'Permission Denied, Only Service Engineer access '
+        });
+    }
 
+ console.log("req.body:", req.body);  
+        
+    
+        const { error, value } = servicedetailsvalidation(req.body); 
+    
+        if (error) {
+            return res.status(400).json({
+                message: error.details[0].message
+            });
+        }
+    
+    
+    const {Customerinward,clientName,quantity,servicestartdate,serviceenddate,Eid,Material,Model,SerialNo,Employeeid,powerconsumption,serviceStatus,BillingStatus } = value;
+    console.log("req.body:", req.body);
+    try {   
+    
+        if (!Eid ||!servicestartdate ||!Employeeid||!clientName) {
+            return res.status(400).json({
+                message: ' Eid,servicestartdata and Employeeid are required'
+            });
+        }
+        const servicework = new Servicedetails({
+            Eid,  
+            Customerinward,
+            quantity,
+            servicestartdate,
+            serviceenddate,
+            Employeeid,
+            Material,
+            Model,
+            SerialNo,
+            powerconsumption,
+            serviceStatus,
+            BillingStatus,
+            clientName
+        });
 
+        const savedservice = await servicework
+        .save();
+          console.log(savedservice)
+        return res.status(200).json({
+            message: "Registration Successful",
+            user: {
+                email: savedservice.email,
+                Eid: savedservice.Eid,
+                Employeeid: savedservice.Employeeid,
+                Customerinward: savedservice.Customerinward
+            }
+           
+        });
+      
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
 
+router.get('/getservicedetails',verifyToken,async(req,res)=>{
+    try{
+ 
+      const getdata = await  Servicedetails.find({});
+      if(!getdata){
+        return res.status(404).json({
+            message: 'No data available'
+        });
+      }
+      return res.status(200).json({
+        message:"successfully i getted the data"
+      });
+
+    }catch(error){
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+})
+router.get('/assignservicedetails/:Eid',verifyToken,async(req,res)=>{
+    try{
+   
+      const getdata = await  Servicedetails.find({Eid:req.body.Eid});
+      if(!getdata){
+        return res.status(404).json({
+            message: 'No data available'
+        });
+      }
+      return res.status(200).json({
+        message:"successfully i getted the data"
+      });
+
+    }catch(error){
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+})
+
+router.get('/getname', verifyToken, async (req, res) => {
+    try {
+      const { Eid } = req.query; // Accessing Eid from query params
+      if (!Eid) return res.status(400).json({ message: "Eid is required" });
+  
+      const getnames = await CommonTeam.findOne({ Eid });
+      if (!getnames) return res.status(404).json({ message: "Name not found" });
+  
+      res.status(200).json({ name: getnames.name });
+    } catch (error) {
+      console.error("Server Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  router.get('/getname&email', verifyToken, async (req, res) => {
+    try {
+      const { Eid } = req.query; 
+      if (!Eid) return res.status(400).json({ message: "Eid is required" });
+  
+      const getnames = await CommonTeam.findOne({ Eid });
+      if (!getnames) return res.status(404).json({ message: "Name not found" });
+  
+      res.status(200).json({ name: getnames.name,email:getnames.email });
+    } catch (error) {
+      console.error("Server Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  router.get('/getCompanyresource', verifyToken, async (req, res) => {
+    try {
+      const getcompanyresource = await CommonTeam.find();
+  
+      if (!getcompanyresource || getcompanyresource.length === 0) {
+        return res.status(404).json({ message: "No data found" });
+      }
+  
+      const companyDetails = getcompanyresource.map(item => ({
+        name: item.name,
+        Eid: item.Eid,
+        JOD: item.JOD,
+        EOD: item.EOD,
+        CompanyResources: item.CompanyResources || [] 
+      }));
+  
+      res.status(200).json(companyDetails);
+    } catch (error) {
+      console.error("Server Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  router.put('/updateCompanyresource/:Eid', verifyToken, async (req, res) => {
+    try {
+      const { EOD, givenStatus, Thingsname } = req.body;
+      const { Eid } = req.params;
+  
+      // Input validation
+      if (!EOD || !givenStatus || !Thingsname) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+  
+      const updateResult = await CommonTeam.updateOne(
+        {
+          "Eid": Eid,
+          "CompanyResources.Thingsname": Thingsname,
+        },
+        {
+          $set: {
+            "CompanyResources.$.EOD": EOD,
+            "CompanyResources.$.givenStatus": givenStatus,
+          },
+        }
+      );
+  
+      if (updateResult.modifiedCount === 0) {
+        return res.status(404).json({ message: "No matching record found to update" });
+      }
+  
+      res.status(200).json({ message: "Updated Successfully", updateResult });
+    } catch (error) {
+      console.error("Server Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  router.get('/getUserData/:Eid', verifyToken, async (req, res) => {
+    const { Eid } = req.params;  
+    
+    try {
+        const user = await Productrequest.findOne({ Eid });  // Find user by Eid
+    
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+    
+        return res.status(200).json({
+            name: user.name,
+            email: user.email,
+            Eid: user.Eid,
+            Description: user.Description,
+            quantity: user.quantity,
+            productname: user.productname
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
+router.get('/workvisit/:Eid', async (req, res) => {
+    const { Eid } = req.params; 
+    
+    try {
+        const serviceEngineer = await ServiceEngineervisit.findOne({ Eid });
+        
+        if (!serviceEngineer) {
+            return res.status(404).json({
+                message: 'Service Engineer with the provided Eid not found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Service Engineer details fetched successfully',
+            serviceEngineer
+        });
+
+    } catch (error) {
+        console.error("Error fetching service engineer:", error);  
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
+router.get('/getservicedetails/:Employeeid', verifyToken, async (req, res) => {
+    try {
+        const { Employeeid } = req.params; 
+
+        const getdata = await Servicedetails.find({ Employeeid });
+
+        if (!getdata || getdata.length === 0) {
+            return res.status(404).json({
+                message: 'No data available for this Employeeid'
+            });
+        }
+
+        return res.status(200).json({
+            message: "Successfully retrieved the data",
+            data: getdata // Send the actual data
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
+router.put('/servicedetails/:id', verifyToken, async (req, res) => {
+    const { id } = req.params; // _id or Employeeid
+    console.log('Received ID:', id);
+    console.log('Received req.body:', req.body);
+  
+    try {
+        const updatedService = await Servicedetails.updateOne(
+            { _id: id }, // or use Employeeid if needed
+            { $set: req.body }
+        );
+  
+        console.log('Updated Service:', updatedService);
+  
+        return res.status(200).json({
+            message: 'Service details updated successfully',
+            id
+        });
+    } catch (err) {
+        console.error('Error:', err);
+        return res.status(500).json({
+            message: 'Internal server error',
+            error: err.message || err
+        });
+    }
+  });
+ router.delete('/deleteCompanyresource/:Eid/:Thingsname', verifyToken, async (req, res) => {
+  try {
+    const { Eid, Thingsname } = req.params;
+
+    // Input validation
+    if (!Eid || !Thingsname) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const result = await CommonTeam.updateOne(
+      { "Eid": Eid },
+      { $pull: { "CompanyResources": { "Thingsname": Thingsname } } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ message: "Resource not found or already deleted" });
+    }
+
+    res.status(200).json({ message: "Resource deleted successfully", result });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+router.get('/workvisit', async (req, res) => {
+    try {
+        const serviceEngineers = await ServiceEngineervisit.find(); 
+        
+        if (serviceEngineers.length === 0) {
+            return res.status(404).json({
+                message: 'No service engineers found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Service Engineers details fetched successfully',
+            serviceEngineers
+        });
+
+    } catch (error) {
+        console.error("Error fetching service engineers:", error);  
+        return res.status(500).json({
+            message: error.message
+        });
+    }
+});
+router.get('/productrequests', async (req, res) => {
+    try {
+        const productRequests = await Productrequest.find();  
+        return res.status(200).json({
+            message: 'Product requests fetched successfully',
+            productRequests
+        });
+    } catch (error) {
+        console.error('Error fetching product requests:', error);
+        return res.status(500).json({
+            message: 'Error fetching product requests',
+            error: error.message
+        });
+    }
+});
+router.post('/Quatation',verifyToken, async (req, res)=>{
+    try{
+        const {  products,Eid,EnquiryNo,Paymentdue,validity,Warranty,Delivery,Discount,Gst,PayableAmount } = req.body;
+        console.log("req.body:", req.body);
+          
+            if (!Eid ||!products) {
+                return res.status(400).json({
+                    message: ' Eid,Description are required'
+                });
+            }
+            const quatation = new Quatation({
+                products,
+                Eid,
+                EnquiryNo,
+                Paymentdue,
+                validity,
+                Warranty,
+                Delivery,
+                Discount,
+                Gst,
+                PayableAmount,
+                Status:'quotsreq'
+            });
+    
+            const savedquatation = await quatation
+            .save();
+              console.log(savedquatation)
+            return res.status(200).json({
+                message: "Registration Successful",
+                user: {
+                    HSNCode: savedquatation.HSNCode,
+                    Eid: savedquatation.Eid,
+                   
+                }
+               
+            });
+    }catch(error){
+        console.error('Error posting the data:', error);
+        return res.status(500).json({
+            message: 'Error fetching product requests',
+            error: error.message
+        });
+
+    }
+    })
+    router.put('/Quatationreq/:EnquiryNo', verifyToken, async (req, res) => {
+        const { EnquiryNo } = req.params;
+        console.log("Received EnquiryNo:", EnquiryNo);  // Debugging the incoming EnquiryNo
+        
+        try {
+            // Find the quotation by EnquiryNo
+            const quotation = await Quatation.findOne({ EnquiryNo });
+        
+            if (!quotation) {
+                return res.status(404).json({ message: 'Quotation not found.' });
+            }
+        
+            // Debugging: Log the current status and its length
+            console.log("Quotation Status:", quotation.Status, "Length:", quotation.Status.length);
+        
+            // Check if the current status is exactly 'quotsreq'
+            if (quotation.Status.trim().toLowerCase() !== 'quotsreq') {
+                return res.status(400).json({
+                    message: 'Status is not "Quotsreq". Cannot update to "Quotsaccess".',
+                    currentStatus: quotation.Status
+                });
+            }
+        
+            // Proceed with the update if the status is valid
+            const updateResult = await Quatation.updateOne(
+                { EnquiryNo },
+                { $set: { Status: 'quotsaccess' } }
+            );
+        
+            if (updateResult.modifiedCount === 0) {
+                return res.status(404).json({ message: 'No matching quotation found to update.' });
+            }
+        
+            return res.status(200).json({
+                message: "Update Successful",
+                status: 'quotsaccess'
+            });
+        } catch (error) {
+            console.error('Error updating the quotation:', error);
+            return res.status(500).json({
+                message: 'Error updating quotation',
+                error: error.message
+            });
+        }
+    });
+    
+    router.get('/quotationGetOne/:EnquiryNo/:Eid', verifyToken, async (req, res) => {
+        const { EnquiryNo, Eid } = req.params;
+    
+        try {
+            // Fetch the quotation from the database based on EnquiryNo, Eid, and Status
+            const getQuotationData = await Quatation.findOne({
+                EnquiryNo: EnquiryNo,
+                Eid: Eid,
+                Status: "quotsaccess"
+            });
+    
+            // Check if quotation was not found
+            if (!getQuotationData) {
+                return res.status(404).json({
+                    message: "Quotation not found",
+                    data: null
+                });
+            }
+    
+            // Successfully fetched data
+            console.log("Successfully fetched the data:", getQuotationData);
+    
+            // Respond with the fetched quotation data
+            return res.status(200).json({
+                message: "Quotation fetched successfully",
+                data: {
+                    Eid: getQuotationData.Eid,
+                    EnquiryNo: getQuotationData.EnquiryNo,
+                    products: getQuotationData.products,
+                    Paymentdue: getQuotationData.Paymentdue,
+                    validity: getQuotationData.validity,
+                    Warranty: getQuotationData.Warranty,
+                    Delivery: getQuotationData.Delivery,
+                    Discount: getQuotationData.Discount,
+                    PayableAmount: getQuotationData.PayableAmount,
+                    Gst: getQuotationData.Gst,
+                    Status: getQuotationData.Status,
+                    createdAt: getQuotationData.createdAt,
+                    updatedAt: getQuotationData.updatedAt
+                }
+            });
+        } catch (err) {
+            // Catch any error that occurred while fetching the data
+            console.error("Error fetching the data:", err);
+    
+            // Send the error response with the error message
+            return res.status(500).json({
+                message: "Error fetching the data",
+                error: err.message
+            });
+        }
+    });
+    
+    
+        router.get('/quotationEditOne/:EnquiryNo/:Eid', verifyToken, async (req, res) => {
+            const { EnquiryNo, Eid } = req.params;
+          
+            try {
+              const getQuotationData = await Quatation.findOne({
+                EnquiryNo: EnquiryNo,
+                Eid: Eid,
+                Status: "Editaccess" 
+              });
+          
+              if (!getQuotationData) {
+                return res.status(404).json({
+                  message: "Quotation not found",
+                  data: null
+                });
+              }
+          
+              console.log("Successfully fetched the data:", getQuotationData);
+              return res.status(200).json({
+                message: "Quotation fetched successfully",
+                data: getQuotationData
+              });
+            } catch (err) {
+              console.error("Error fetching the data:", err);
+              return res.status(500).json({
+                message: "Error fetching the data",
+                error: err.message
+              });
+            }
+          });
+          
+        
+          router.get('/quationgetmany', verifyToken, async (req, res) => {
+            try {
+              const quotations = await Quatation.find({ Status: "quotsreq" });
+          
+              if (quotations.length === 0) {
+                return res.status(404).json({ message: "No quotations found with status 'quotsreq'" });
+              }
+          
+              const formattedQuotations = quotations.map(quotation => quotation.toObject());
+          
+              return res.status(200).json({ message: "Data fetched successfully", formattedQuotations });
+            } catch (err) {
+              return res.status(500).json({ message: "Error fetching data", error: err.message });
+            }
+          });
+          
+          router.get('/quationgeteditmany', verifyToken, async (req, res) => {
+            try {
+              const getquationdatas = await Quatation.find({ Status: "Editreq" });
+          
+              if (getquationdatas.length === 0) {
+                return res.status(404).json({ message: "No data found for editing" });
+              }
+          
+              const formeditedquotation = getquationdatas.map(editquotation => editquotation.toObject());
+              console.log("i get the edted data",getquationdatas)
+              return res.status(200).json({formeditedquotation });
+            } catch (err) {
+              return res.status(500).json({ message: "Error fetching the data", error: err.message });
+            }
+          });
+          
+       router.put('/editQuotation', verifyToken, async (req, res) => {
+        try {
+            // Destructure and extract necessary fields from request body
+            const { EnquiryNo, ...updateFields } = req.body;
+        
+            if (!EnquiryNo) {
+              return res.status(400).json({ message: "EnquiryNo is required." });
+            }
+        
+            // Ensure _id is not part of the update fields
+            delete updateFields._id;
+        
+            // Create an object to store fields that will be updated
+            const fieldsToUpdate = {};
+        
+            // Loop through each field in the updateFields and add it to fieldsToUpdate if valid
+            for (const key in updateFields) {
+              if (updateFields[key] !== undefined && updateFields[key] !== null) {
+                fieldsToUpdate[key] = updateFields[key];
+              }
+            }
+        
+            // Set default status to "Editaccess" if Status is not provided
+            fieldsToUpdate.Status =  "Editreq";
+        
+            // Check if there are no valid fields to update
+            if (Object.keys(fieldsToUpdate).length === 0) {
+              return res.status(400).json({ message: "No valid fields provided to update." });
+            }
+        
+            // Update the quotation in the database
+            const updateResult = await Quatation.updateOne(
+              { EnquiryNo: EnquiryNo }, // Match by EnquiryNo
+              { $set: fieldsToUpdate } // Update the fields
+            );
+        
+            // If no matching quotation is found
+            if (updateResult.matchedCount === 0) {
+              return res.status(404).json({ message: "No quotation found to update." });
+            }
+        
+            // Send success response
+            return res.status(200).json({
+              message: "Quotation updated successfully",
+              status: fieldsToUpdate.Status,
+            });
+        
+          } catch (error) {
+            console.error('Error updating the quotation:', error);
+            return res.status(500).json({
+              message: 'Error updating the quotation',
+              error: error.message,
+            });
+          }
+        });
+    
+    router.put('/editAccessQuotation/:EnquiryNo', verifyToken, async (req, res) => {
+        const { EnquiryNo } = req.params;
+    
+        try {
+            // Find the quotation by EnquiryNo and check its current status
+            const quotation = await Quatation.findOne({ EnquiryNo });
+    
+            if (!quotation) {
+                return res.status(404).json({ message: 'Quotation not found.' });
+            }
+    
+            // Check if the current status is 'Quotsreq'
+            if (quotation.Status !== 'Editreq') {
+                return res.status(400).json({ message: 'Status is not "Editreq". Cannot update to "Editaccess".' });
+            }
+    
+            // Proceed with the update if the status is 'Quotsreq'
+            const updateResult = await Quatation.updateOne(
+                { EnquiryNo },
+                { $set: { Status: 'Editaccess' } }
+            );
+    
+            if (updateResult.modifiedCount === 0) {
+                return res.status(404).json({ message: 'No matching quotation found to update.' });
+            }
+    
+            return res.status(200).json({
+                message: "Update Successful",
+                status: 'Editaccess'
+            });
+        } catch (error) {
+            console.error('Error updating the quotation:', error);
+            return res.status(500).json({
+                message: 'Error updating quotation',
+                error: error.message
+            });
+        }
+    });
+    router.put('/mdeditQuotation', verifyToken, async (req, res) => {
+        try {
+          // Destructure and extract necessary fields from request body
+          const { EnquiryNo, ...updateFields } = req.body;
+      
+          if (!EnquiryNo) {
+            return res.status(400).json({ message: "EnquiryNo is required." });
+          }
+      
+          // Ensure _id is not part of the update fields
+          delete updateFields._id;
+      
+          // Create an object to store fields that will be updated
+          const fieldsToUpdate = {};
+      
+          // Loop through each field in the updateFields and add it to fieldsToUpdate if valid
+          for (const key in updateFields) {
+            if (updateFields[key] !== undefined && updateFields[key] !== null) {
+              fieldsToUpdate[key] = updateFields[key];
+            }
+          }
+      
+          // Set default status to "Editaccess" if Status is not provided
+          fieldsToUpdate.Status =  "Editaccess";
+      
+          // Check if there are no valid fields to update
+          if (Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({ message: "No valid fields provided to update." });
+          }
+      
+          // Update the quotation in the database
+          const updateResult = await Quatation.updateOne(
+            { EnquiryNo: EnquiryNo }, // Match by EnquiryNo
+            { $set: fieldsToUpdate } // Update the fields
+          );
+      
+          // If no matching quotation is found
+          if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ message: "No quotation found to update." });
+          }
+      
+          // Send success response
+          return res.status(200).json({
+            message: "Quotation updated successfully",
+            status: fieldsToUpdate.Status,
+          });
+      
+        } catch (error) {
+          console.error('Error updating the quotation:', error);
+          return res.status(500).json({
+            message: 'Error updating the quotation',
+            error: error.message,
+          });
+        }
+      });
+      router.get('/getoneenquiries/:EnquiryNo', verifyToken, async (req, res) => {
+        const { EnquiryNo } = req.params;
+    
+        if (!EnquiryNo) {
+            return res.status(400).json({ message: 'EnquiryNo is required' });
+        }
+    
+        console.log("Received EnquiryNo:", EnquiryNo);  
+    
+        try {
+            const customerData = await HeadEnquiry.findOne({EnquiryNo});
+    
+            if (!customerData) {
+                return res.status(404).json({ message: 'No customer found' });
+            }
+            return res.status(200).json(customerData);
+    
+        } catch (err) {
+            console.error("Error:", err);
+            return res.status(500).json({ message: 'Internal server error', error: err.message || err });
+        }
+    });
+      
+   
 module.exports = router;

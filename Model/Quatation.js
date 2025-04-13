@@ -1,0 +1,66 @@
+const mongoose = require('mongoose');
+const Quatation = new mongoose.Schema({
+    Eid:{
+        type:String,
+        required:true 
+    },
+    EnquiryNo:{
+        type:String,
+        required:true 
+    },
+    products:[{
+    HSNCode:{
+         type:String,
+         required:true
+    },
+    UnitDescription:{
+       type:String,
+       required:true
+    },
+    Description:{
+        type:String,
+        required:true
+     },
+    UOM:{
+      type:String,
+      required:true
+    },
+    Quantity:{
+        type:String,
+    },
+    UnitPrice:{
+        type:String,
+        required:true
+    },
+    Total:{
+        type:String,
+    },
+    }],
+    Paymentdue:{
+        type:String,
+    },
+    validity:{
+        type:String,
+    },
+    Warranty:{
+        type:String, 
+    },
+    Delivery:{
+        type:String, 
+    },
+    Discount:{
+        type:String,  
+    },
+    
+    PayableAmount:{
+        type:String,   
+    },
+    Gst:{
+        type:String,   
+    },
+    Status:{
+        type:String,
+        required:true 
+    },
+},{timestamps:true});
+module.exports = mongoose.model('quatation',Quatation);

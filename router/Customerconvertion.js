@@ -304,6 +304,40 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
                 res.status(500).json({ message: 'Server error. Please try again later.' });
             }
         });
+        router.get('/getconverteddata', verifytoken , async (req, res) => {
+            
+            try {
+                const customerData = await Customerconverstion.find();
+        
+                if (!customerData) {
+                    console.log('No matching document found');
+                    return res.status(404).json({ message: 'No matching customer conversation found' });
+                }
+        
+                res.status(200).json({ message: 'Successfully get the customer conversation', customerData });
+        
+            } catch (err) {
+                console.error("Error:", err);  
+                return res.status(500).json({ message: 'Internal server error', error: err.message || err });
+            }
+        });
+        router.get('/getcompanyname',verifytoken, async (req, res) => {
+            try {
+                const customerData = await Customerconverstion.find().select('companyName');
+                if (!customerData || customerData.length === 0) {
+                    console.log('No matching document found');
+                    return res.status(404).json({ message: 'No customer conversations found' });
+                }
+                const companyNames = customerData.map(item => item.companyName);
+                res.status(200).json({
+                    message: 'Successfully fetched company names',
+                    companyNames,  
+                });
+            } catch (err) {
+                console.error("Error:", err);
+                return res.status(500).json({ message: 'Internal server error', error: err.message || err });
+            }
+        });
         
           
         

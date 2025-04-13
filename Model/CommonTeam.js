@@ -34,9 +34,20 @@ const CommonTeam = new mongoose.Schema({
        type:String,
        required:true,
     },
-    CompanyResources:{
-        type:String
-    },
+    CompanyResources:[
+        {
+        Thingsname: {
+            type: String,  
+          },
+        productnumber:{
+            type: String, 
+        },
+        givenStatus:{
+            type: String, 
+            enum:["provided","handover","bending","nothandover"],
+        },
+    }
+    ],
     Remarks:{
         type:String
     },
@@ -55,5 +66,5 @@ const CommonTeam = new mongoose.Schema({
    
    
 },{timestamps:true});
-module.exports = mongoose.model('userprofile',CommonTeam);
+module.exports = mongoose.model('Alluserprofile',CommonTeam);
 
