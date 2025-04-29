@@ -33,7 +33,7 @@ app.use('/api-inventory',Addproduct)
 app.use('/api-salesorder',salesorder)
 app.use('/api/cc',customerconversion)
 app.use('/api-purchaseorder',purchaseorder)
-app.use('/api-perfomainvoice',perfomainvoice)
+app.use('/api-invoice',perfomainvoice)
 
 
 app.get('/', async (req, res) => {

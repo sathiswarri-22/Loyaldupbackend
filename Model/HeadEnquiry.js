@@ -109,4 +109,4 @@ createdBy:{
  
 }
 },{timestamps:true})
-module.exports=mongoose.model('enquirie',HeadEnquiry)
+module.exports=mongoose.model('Allenquiry',HeadEnquiry)

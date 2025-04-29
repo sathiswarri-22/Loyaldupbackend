@@ -339,6 +339,63 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             }
         });
         
-          
+        router.get('/getMultipleEnquiryStatuses', async (req, res) => {
+            const enquiryNos = req.query.enquiryNos?.split(',') || [];
+        
+            if (enquiryNos.length === 0) {
+                return res.status(400).json({ message: 'No enquiry numbers provided.' });
+            }
+        
+            try {
+                // Step 1: Fetch all HeadEnquiry documents for given enquiry numbers
+                const headEnquiries = await HeadEnquiry.find({ EnquiryNo: { $in: enquiryNos } }).lean();
+        
+                // Create a map of EnquiryNo to HeadEnquiry for quick lookup
+                const headMap = {};
+                headEnquiries.forEach(enq => {
+                    headMap[enq.EnquiryNo] = enq;
+                });
+        
+                const result = {};
+        
+                // Step 2: Process each EnquiryNo to determine conversion status
+                for (const EnquiryNo of enquiryNos) {
+                    const head = headMap[EnquiryNo];
+        
+                    // If not found in HeadEnquiry, mark as not converted
+                    if (!head) {
+                        result[EnquiryNo] = { shouldHideButtons: false };
+                        continue;
+                    }
+        
+                    // Try to find a Customerconverstion that includes this EnquiryNo
+                    const match = await Customerconverstion.findOne({
+                        'customerconvert.EnquiryNo': EnquiryNo
+                    }).lean();
+        
+                    // Try to find the exact matching entry in the array
+                    const matchingConvert = match?.customerconvert?.find(
+                        c => c.EnquiryNo === EnquiryNo
+                    );
+        
+                    // Determine button visibility based on Status
+                    if (matchingConvert && matchingConvert.Status === 'Enquiry-4thstage' && matchingConvert.Convertedstatus === 'yes') {
+                        result[EnquiryNo] = { shouldHideButtons: true };  // Enquiry converted
+                    } else {
+                        result[EnquiryNo] = { shouldHideButtons: false }; // Not converted
+                    }
+                }
+        
+                return res.json(result);
+        
+            } catch (err) {
+                console.error("Error in /getMultipleEnquiryStatuses:", err);
+                return res.status(500).json({ message: 'Server error' });
+            }
+        });
+        
+        
+        
+        
         
 module.exports = router;

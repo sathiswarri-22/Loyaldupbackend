@@ -186,8 +186,10 @@ const registervalidation = (datas) => {
       Problems: Joi.array().items(Joi.object({
         description: Joi.string().min(3).required()
       })).optional(),
-      Assessment: Joi.string().optional()
-    });
+      financialYear: Joi.string().pattern(/^\d{2}-\d{2}$/).required().messages({
+        'string.pattern.base': '"financialYear" must be in format "YY-YY" (e.g., "24-25")'
+      })
+          });
   
     return serviceSchema.validate(data);
   };
@@ -313,7 +315,9 @@ const registervalidation = (datas) => {
       }),
       BillingStatus:Joi.string().optional().messages({
         'string.base': '" BillingStatus" should be a string',
-      })
+      }),
+      customerComplaint: Joi.string().allow('', null), // ✅ now allowed
+      engineerProblem: Joi.string().allow('', null)     // ✅ now allowed
     });
 
     return Servicedetails.validate(datas);
