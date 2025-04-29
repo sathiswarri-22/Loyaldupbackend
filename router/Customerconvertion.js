@@ -339,7 +339,7 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             }
         });
         
-        router.get('/getMultipleEnquiryStatuses', async (req, res) => {
+        router.get('/getMultipleEnquiryStatuses',verifytoken, async (req, res) => {
             const enquiryNos = req.query.enquiryNos?.split(',') || [];
         
             if (enquiryNos.length === 0) {
@@ -394,6 +394,22 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             }
         });
         
+        router.delete('/customernotconverted/:EnquiryNo', verifytoken, async (req, res) => {
+            const { EnquiryNo } = req.params;
+            console.log("before deleteing the enquiryno",EnquiryNo);
+            try {
+                const result = await CustomerNotConverted.findOneAndDelete({EnquiryNo});
+        
+                if (!result) {
+                    return res.status(404).json({ message: 'No record found with that EnquiryNo' });
+                }
+        
+                res.status(200).json({ message: 'Record deleted successfully' });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ error: 'Server error. Could not delete record.' });
+            }
+        });
         
         
         
