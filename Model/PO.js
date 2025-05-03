@@ -23,6 +23,8 @@ const purchaseOrderSchema = new mongoose.Schema({
   poNumber: { type: String, required: true, unique: true },
   financialYear: { type: String, required: true },
   Address: { type: String, required: true },
+  LP:{type: String,},
+  discount:{type: String,},
   SupplierName: { type: String, required: true },
   SuppNO: { type: String, required: true },
   RefQNo: { type: String, required: true },
@@ -31,4 +33,4 @@ const purchaseOrderSchema = new mongoose.Schema({
   originalPoNumber: { type: String }, // NEW FIELD: reference to original if it's a revision
 }, { timestamps: true });
 
-module.exports = mongoose.model("PO12", purchaseOrderSchema);
+module.exports = mongoose.model("PO13", purchaseOrderSchema);

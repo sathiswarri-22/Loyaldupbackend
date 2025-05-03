@@ -9,6 +9,8 @@ router.post('/create-PO', verifytoken, async (req, res) => {
     const {
       Eid,
       deliveryTerms,
+      LP,
+      discount,
       warrantyTerms,
       paymentTerms,
       rows,
@@ -50,6 +52,8 @@ router.post('/create-PO', verifytoken, async (req, res) => {
     const newPO = new Purchase({
       poNumber,
       Eid,
+      LP,
+      discount,
       deliveryTerms,
       warrantyTerms,
       paymentTerms,
