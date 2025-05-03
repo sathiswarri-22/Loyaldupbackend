@@ -43,7 +43,7 @@ const customerConvertSchema = new mongoose.Schema({
     },
     Convertedstatus: {
         type: String,
-        enum: ['yes', 'no'],
+        enum: ['yes'],
     },
     Eid: {
         type: String,

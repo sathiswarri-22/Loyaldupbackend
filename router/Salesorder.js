@@ -6,7 +6,7 @@ const Inventory = require('../Model/Inventory');
 
 router.post('/create-salesorder', verifytoken, async (req, res) => {
   try {
-    const { salesOrderDetails, termsAndConditions, items, summary } = req.body;
+    const { salesOrderDetails, termsAndConditions, items, summary,Eid } = req.body;
 
     if (!salesOrderDetails || !salesOrderDetails.customerName || !salesOrderDetails.quoteNumber || !salesOrderDetails.salesOrderDate || !salesOrderDetails.status) {
       return res.status(400).json({ error: 'Missing required sales order details.' });
@@ -59,6 +59,7 @@ router.post('/create-salesorder', verifytoken, async (req, res) => {
       termsAndConditions,
       items,
       summary,
+      Eid
     });
 
     await newSalesOrder.save();

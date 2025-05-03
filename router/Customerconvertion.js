@@ -7,6 +7,7 @@ const HeadEnquiry = require('../Model/HeadEnquiry')
 const Customerconverstion = require('../Model/Customerconvertion')
 const CustomerNotConvert = require('../Model/CustomerNotConverted');
 const CustomerNotConverted = require('../Model/CustomerNotConverted');
+const { date } = require('joi');
 
 router.post('/customerconvert', verifytoken, async (req, res) => {
     try {
@@ -29,9 +30,7 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             return res.status(400).json('Missing required BillingAddressDetails fields');
         }
 
-        if (!DescriptionDetails) {
-            return res.status(400).json('Missing required DescriptionDetails');
-        }
+        
 
         if (!Convertedstatus) {
             return res.status(400).json('Missing required field: Convertedstatus');
@@ -339,60 +338,114 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
             }
         });
         
-        router.get('/getMultipleEnquiryStatuses',verifytoken, async (req, res) => {
+        router.get('/getMultipleEnquiryStatuses', verifytoken, async (req, res) => {
             const enquiryNos = req.query.enquiryNos?.split(',') || [];
-        
+          
             if (enquiryNos.length === 0) {
-                return res.status(400).json({ message: 'No enquiry numbers provided.' });
+              return res.status(400).json({ message: 'No enquiry numbers provided.' });
             }
-        
+          
             try {
-                // Step 1: Fetch all HeadEnquiry documents for given enquiry numbers
-                const headEnquiries = await HeadEnquiry.find({ EnquiryNo: { $in: enquiryNos } }).lean();
-        
-                // Create a map of EnquiryNo to HeadEnquiry for quick lookup
-                const headMap = {};
-                headEnquiries.forEach(enq => {
-                    headMap[enq.EnquiryNo] = enq;
-                });
-        
-                const result = {};
-        
-                // Step 2: Process each EnquiryNo to determine conversion status
-                for (const EnquiryNo of enquiryNos) {
-                    const head = headMap[EnquiryNo];
-        
-                    // If not found in HeadEnquiry, mark as not converted
-                    if (!head) {
-                        result[EnquiryNo] = { shouldHideButtons: false };
-                        continue;
-                    }
-        
-                    // Try to find a Customerconverstion that includes this EnquiryNo
-                    const match = await Customerconverstion.findOne({
-                        'customerconvert.EnquiryNo': EnquiryNo
-                    }).lean();
-        
-                    // Try to find the exact matching entry in the array
-                    const matchingConvert = match?.customerconvert?.find(
-                        c => c.EnquiryNo === EnquiryNo
-                    );
-        
-                    // Determine button visibility based on Status
-                    if (matchingConvert && matchingConvert.Status === 'Enquiry-4thstage' && matchingConvert.Convertedstatus === 'yes') {
-                        result[EnquiryNo] = { shouldHideButtons: true };  // Enquiry converted
-                    } else {
-                        result[EnquiryNo] = { shouldHideButtons: false }; // Not converted
-                    }
+              console.log("Received enquiryNos:", enquiryNos);
+          
+              const headEnquiries = await HeadEnquiry.find({ EnquiryNo: { $in: enquiryNos } }).lean();
+          
+              // Map EnquiryNo to corresponding head data
+              const headMap = {};
+              headEnquiries.forEach(enq => {
+                headMap[enq.EnquiryNo] = enq;
+              });
+          
+              const result = {};
+          
+              for (const EnquiryNo of enquiryNos) {
+                const head = headMap[EnquiryNo];
+          
+                if (!head) {
+                  result[EnquiryNo] = { shouldHideButtons: false };
+                  continue;
                 }
-        
-                return res.json(result);
-        
+          
+                // Extract required fields
+                const headClientName = head?.LeadDetails?.clientName || '';
+                const headMobile = head?.ContactDetails?.MobileNumber || '';
+                const headAddress = head?.AddressDetails || {};
+          
+                const {
+                  Address = '',
+                  Country = '',
+                  City = '',
+                  PostalCode = '',
+                  State = ''
+                } = headAddress;
+          
+                console.log("Searching for matches with:", {
+                  clientName: headClientName,
+                  mobile: headMobile,
+                  Address,
+                  Country,
+                  City,
+                  PostalCode,
+                  State
+                });
+          
+                let shouldHide = false;
+          
+                const addressQuery = {
+                  'AddressDetails.Address': Address,
+                  'AddressDetails.Country': Country,
+                  'AddressDetails.City': City,
+                  'AddressDetails.PostalCode': PostalCode,
+                  'AddressDetails.State': State
+                };
+          
+                const matchingConversions = await Customerconverstion.find({
+                  ...addressQuery,
+                  customerconvert: {
+                    $elemMatch: {
+                      clientName: headClientName,
+                      'CustomerDetails.MobileNumber': headMobile,
+                      Status: 'Enquiry-4thstage',
+                      Convertedstatus: 'yes'
+                    }
+                  }
+                }).lean();
+          
+                console.log(`Found ${matchingConversions.length} matching conversions for EnquiryNo ${EnquiryNo}`);
+          
+                for (const match of matchingConversions) {
+                  for (const convert of match.customerconvert || []) {
+                    const customerClientName = convert?.clientName || '';
+                    const customerMobile = convert?.CustomerDetails?.MobileNumber || '';
+                    const customerStatus = convert?.Status || '';
+                    const customerConverted = convert?.Convertedstatus || '';
+          
+                    const isMatching =
+                      customerClientName === headClientName &&
+                      customerMobile === headMobile &&
+                      customerStatus === 'Enquiry-4thstage' &&
+                      customerConverted === 'yes';
+          
+                    if (isMatching) {
+                      shouldHide = true;
+                      break;
+                    }
+                  }
+                  if (shouldHide) break;
+                }
+          
+                result[EnquiryNo] = { shouldHideButtons: shouldHide };
+              }
+          
+              return res.json(result);
+          
             } catch (err) {
-                console.error("Error in /getMultipleEnquiryStatuses:", err);
-                return res.status(500).json({ message: 'Server error' });
+              console.error("Error in /getMultipleEnquiryStatuses:", err);
+              return res.status(500).json({ message: 'Server error' });
             }
-        });
+          });
+          
+        
         
         router.delete('/customernotconverted/:EnquiryNo', verifytoken, async (req, res) => {
             const { EnquiryNo } = req.params;
@@ -410,8 +463,60 @@ router.post('/customerconvert', verifytoken, async (req, res) => {
                 res.status(500).json({ error: 'Server error. Could not delete record.' });
             }
         });
-        
-        
-        
+        router.get('/Enquirystatus/:EnquiryNo', verifytoken, async (req, res) => {
+            const { EnquiryNo } = req.params;
+          
+            if (!EnquiryNo) {
+              return res.status(400).json({ message: "Missing 'EnquiryNo' in query parameters." });
+            }
+          
+            try {
+              // Find the document where customerconvert array contains the EnquiryNo
+              const customerData = await Customerconverstion.findOne({ "customerconvert.EnquiryNo": EnquiryNo });
+              const headEnquiryData = await HeadEnquiry.findOne({ EnquiryNo });
+    console.log("✅ headEnquiryData:", headEnquiryData);
+          
+              console.log("✅ customerData:", customerData);
+          
+              if (customerData && headEnquiryData) {
+                // Find the specific customerconvert object with the matching EnquiryNo
+                const convertEntry = customerData.customerconvert.find(c => c.EnquiryNo === EnquiryNo);
+          
+                if (!convertEntry) {
+                  return res.status(404).json({
+                    message: `EnquiryNo '${EnquiryNo}' found in document but not inside customerconvert array.`,
+                  });
+                }
+          
+                return res.json({
+                  EnquiryNo,
+                  source: "Customerconvertion",
+                  data:convertEntry,
+                  status: convertEntry.Status,
+                });
+              }else{
+                if (headEnquiryData) {
+                    return res.json({
+                      EnquiryNo,
+                      source: "Headenquiry",
+                      data:headEnquiryData,
+                      status: headEnquiryData.Status,
+                    });
+                  }
+              }
+          
+              return res.status(404).json({
+                message: `EnquiryNo '${EnquiryNo}' not found in Customerconvertion collection.`,
+              });
+          
+            } catch (error) {
+              console.error('❌ Error fetching enquiry status:', error);
+              res.status(500).json({
+                message: 'Internal Server Error while fetching enquiry status',
+                error: error.message,
+              });
+            }
+          });
+          
         
 module.exports = router;

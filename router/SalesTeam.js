@@ -618,9 +618,7 @@ router.post('/customerconversion', verifyToken, async (req, res) => {
             return res.status(400).json('Missing required BillingAddressDetails fields');
         }
 
-        if (!DescriptionDetails) {
-            return res.status(400).json('Missing required DescriptionDetails');
-        }
+      
         const customerDetails = await HeadEnquiry.findOne({ EnquiryNo: req.body.EnquiryNo });
         console.log("i get the enquirydetails",customerDetails);
 
@@ -652,6 +650,7 @@ router.post('/customerconversion', verifyToken, async (req, res) => {
                 DescriptionDetails,
                 BillingAddressDetails,
                 Eid:req.body.Eid,
+                Convertedstatus:'yes',
                 Status: 'Enquiry-4thstage',
             };
 
@@ -1135,33 +1134,9 @@ router.get('/getenquiries/:Eid', verifyToken, async (req, res) => {
 
 
 
-router.get('/Enquirystatus/:EnquiryNo', verifyToken, async (req, res) => {
-  const { EnquiryNo } = req.params;
 
-  console.log("Received EnquiryNo:", EnquiryNo);  // Log to check what is being received
 
-  try {
-      // Find the customer conversion details in CustomerConvert model
-      const Enquiry2 = await Customerconvertion.findOne({
-          "customerconvert.EnquiryNo": EnquiryNo
-      }).select('customerconvert');  // Select only the customerconvert field
 
-      console.log('Enquiry2:', Enquiry2); // Log Enquiry2 result
-
-      if (Enquiry2) {
-          const result = {
-              EnquiryNo,
-              Enquiry2: Enquiry2.customerconvert, // Return the customerconvert data
-          };
-          res.json(result);
-      } else {
-          res.status(404).json({ message: 'Enquiry not found' });
-      }
-  } catch (error) {
-      console.error('Error fetching enquiry status:', error);
-      res.status(500).json({ message: 'Error fetching enquiry status', error: error.message });
-  }
-});
 router.get('/todayviewleadenquiry', verifyToken, async (req, res) => {
     try {
         
@@ -1440,7 +1415,8 @@ router.post('/servicedetails', verifyToken, async (req, res) => {
         });
       }
       return res.status(200).json({
-        message:"successfully i getted the data"
+        message:"successfully i getted the data",
+        getdata
       });
 
     }catch(error){
@@ -1719,7 +1695,9 @@ router.post('/Quatation', verifyToken, async (req, res) => {
         financialYear,
         isRevision,
         referenceToRevise,
-        Status
+        Status,
+        LP,
+        discount,
       } = req.body;
   
       // Validation
@@ -1780,6 +1758,8 @@ router.post('/Quatation', verifyToken, async (req, res) => {
       // Create a new quotation
       const newQuotation = new Quatation({
         products,
+        LP,
+        discount,
         Eid,
         EnquiryNo,
         Paymentdue,
@@ -1950,7 +1930,7 @@ router.post('/Quatation', verifyToken, async (req, res) => {
           
           router.put('/editQuotation', verifyToken, async (req, res) => {
             try {
-              const { EnquiryNo, revisedVersion, ...updateFields } = req.body;
+              const { EnquiryNo, revisedVersion,Eid, ...updateFields } = req.body;
               
               if (!EnquiryNo) {
                 return res.status(400).json({ message: "EnquiryNo is required." });
@@ -2255,6 +2235,80 @@ router.post('/Quatation', verifyToken, async (req, res) => {
           });
         }
       });
-    
+      router.get('/GetAllquotation', verifyToken, async (req, res) => {
+        try {
+          const latestQuotations = await Quatation.aggregate([
+            // Step 1: Sort all documents by updatedAt (newest first)
+            { $sort: { updatedAt: -1 } },
+      
+            // Step 2: Group by EnquiryNo and keep the latest entry
+            {
+              $group: {
+                _id: "$EnquiryNo",
+                latest: { $first: "$$ROOT" }
+              }
+            },
+      
+            // Step 3: Replace the root with the latest document
+            { $replaceRoot: { newRoot: "$latest" } },
+      
+            // Optional: sort final results if needed
+            { $sort: { updatedAt: -1 } }
+          ]);
+      
+          return res.status(200).json({
+            message: "Latest quotations per EnquiryNo fetched successfully",
+            data: latestQuotations
+          });
+      
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          return res.status(500).json({
+            message: "Failed to fetch latest quotations",
+            error: error.message
+          });
+        }
+      });
+      router.get('/GetEidquotation/:Eid', verifyToken, async (req, res) => {
+        try {
+          const { Eid } = req.params;
+      
+          const latestQuotations = await Quatation.aggregate([
+            // Step 1: Match by Eid
+            { $match: { Eid: Eid } }, // or use { Eid: Eid } if that's the field name
+      
+            // Step 2: Sort all documents by updatedAt (newest first)
+            { $sort: { updatedAt: -1 } },
+      
+            // Step 3: Group by EnquiryNo and keep the latest entry
+            {
+              $group: {
+                _id: "$EnquiryNo",
+                latest: { $first: "$$ROOT" }
+              }
+            },
+      
+            // Step 4: Replace the root with the latest document
+            { $replaceRoot: { newRoot: "$latest" } },
+      
+            // Optional: sort final results if needed
+            { $sort: { updatedAt: -1 } }
+          ]);
+      
+          return res.status(200).json({
+            message: "Latest quotation fetched successfully for the given Eid",
+            data: latestQuotations
+          });
+      
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          return res.status(500).json({
+            message: "Failed to fetch latest quotation",
+            error: error.message
+          });
+        }
+      });
+      
+      
    
 module.exports = router;

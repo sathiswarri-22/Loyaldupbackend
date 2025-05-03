@@ -78,7 +78,13 @@ const Quatation = new mongoose.Schema({
   referenceToRevise: {  // Optional field to reference the original quotation for revision
     type: String,
     default: null
+  },
+  LP:{
+    type:String,
+  },
+  discount:{
+    type:String
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Quotation', Quatation);
+module.exports = mongoose.model('quots', Quatation);

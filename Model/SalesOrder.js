@@ -2,7 +2,9 @@ const mongoose = require("mongoose");
 const shortid = require ('shortid');
 
 const SalesOrderSchema = new mongoose.Schema({
-
+  Eid:{
+    type: String, 
+  },
   salesOrderId: { 
     type: String, 
     unique: true 
@@ -118,4 +120,4 @@ const SalesOrderSchema = new mongoose.Schema({
   
 },{timestamps:true});
 
-module.exports = mongoose.model("Sales-Order", SalesOrderSchema);
+module.exports = mongoose.model("SalesOrder", SalesOrderSchema);

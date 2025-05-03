@@ -90,10 +90,7 @@ AddressDetails: {
 },
 
 DescriptionDetails: {
-    
-        type: String,
-        required: true
-    
+        type: String,    
 },
 
 
