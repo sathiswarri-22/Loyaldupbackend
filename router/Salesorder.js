@@ -72,4 +72,34 @@ router.post('/create-salesorder', verifytoken, async (req, res) => {
   }
 });
 
+// Route to fetch sales orders by Eid
+router.get('/salesorders/:eid', verifytoken, async (req, res) => {
+  try {
+    const { eid } = req.params;
+
+    const salesOrders = await SalesOrder.find({ Eid: eid });
+
+    if (salesOrders.length === 0) {
+      return res.status(404).json({ message: 'No sales orders found for this Eid' });
+    }
+
+    res.status(200).json(salesOrders);
+  } catch (error) {
+    console.error('Error fetching sales orders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to fetch ALL sales orders (no filtering by Eid)
+router.get('/salesorders', verifytoken, async (req, res) => {
+  try {
+    const salesOrders = await SalesOrder.find().sort({ createdAt: -1 }); // Optional: newest first
+    res.status(200).json(salesOrders);
+  } catch (error) {
+    console.error('Error fetching all sales orders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 module.exports = router;

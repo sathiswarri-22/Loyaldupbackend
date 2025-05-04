@@ -41,4 +41,4 @@ invoiceSchema.index({ financialYear: 1 });
 invoiceSchema.index({ Eid: 1 });
 invoiceSchema.index({ Status: 1 });
 
-module.exports = mongoose.model('PINew', invoiceSchema);
+module.exports = mongoose.model('PINew', invoiceSchema);    
